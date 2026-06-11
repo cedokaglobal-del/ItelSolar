@@ -19,7 +19,12 @@ export const Route = createFileRoute("/admin/products")({
 
 type Tab = "products" | "solar-systems";
 
-type SolarComp = { type: "panel" | "inverter" | "battery" | "accessory"; name: string; spec: string; qty: number };
+type SolarComp = { _key: string; type: "panel" | "inverter" | "battery" | "accessory"; name: string; spec: string; qty: number };
+
+let _compKey = 0;
+function freshComp(): SolarComp {
+  return { _key: `c${++_compKey}`, type: "panel", name: "", spec: "", qty: 1 };
+}
 
 type ProductForm = {
   slug: string; name: string; brand: string; category: ProductCategory;
@@ -40,7 +45,7 @@ const emptyForm: ProductForm = {
   solarEnabled: false,
   solarVoltage: "48V", solarPanels: 4, solarPanelWattage: 550, solarInverterKVA: 5,
   solarBatteryKWh: 5.12, solarBatteryType: "LiFePO4",
-  solarComponents: [{ type: "panel", name: "", spec: "", qty: 1 }],
+  solarComponents: [freshComp()],
 };
 
 function productToForm(p: Product): ProductForm {
@@ -53,7 +58,7 @@ function productToForm(p: Product): ProductForm {
     solarEnabled: false,
     solarVoltage: "48V", solarPanels: 4, solarPanelWattage: 550, solarInverterKVA: 5,
     solarBatteryKWh: 5.12, solarBatteryType: "LiFePO4",
-    solarComponents: [{ type: "panel", name: "", spec: "", qty: 1 }],
+  solarComponents: [freshComp()],
   };
 }
 
@@ -335,7 +340,7 @@ function AdminProducts() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">Images</label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {form.images.split("\n").filter(Boolean).map((url, i) => (
-                        <div key={i} className="relative h-16 w-16 shrink-0 rounded-lg border bg-surface overflow-hidden group/image">
+                          <div key={url} className="relative h-16 w-16 shrink-0 rounded-lg border bg-surface overflow-hidden group/image">
                           <img src={url} alt="" className="h-full w-full object-cover" />
                           <button
                             type="button"
@@ -435,7 +440,7 @@ function AdminProducts() {
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-muted-foreground mb-1.5">Components (published as individual products)</label>
                         {form.solarComponents.map((comp, i) => (
-                          <div key={i} className="flex flex-wrap items-end gap-2 mb-2">
+                          <div key={comp._key} className="flex flex-wrap items-end gap-2 mb-2">
                             <select
                               value={comp.type}
                               onChange={(e) => {
@@ -495,7 +500,7 @@ function AdminProducts() {
                         ))}
                         <button
                           type="button"
-                          onClick={() => setForm({ ...form, solarComponents: [...form.solarComponents, { type: "panel", name: "", spec: "", qty: 1 }] })}
+                          onClick={() => setForm({ ...form, solarComponents: [...form.solarComponents, freshComp()] })}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                         >
                           <Plus className="h-3 w-3" /> Add component

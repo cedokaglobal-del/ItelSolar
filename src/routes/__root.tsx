@@ -48,8 +48,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    if (error) reportLovableError(error, { boundary: "tanstack_root_error_component" });
+  }, [error?.message]);
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4">
@@ -108,7 +108,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Premium solar panels, inverters, batteries and complete kits. Size your system in 60 seconds." },
       { name: "robots", content: "index, follow" },
       { name: "googlebot", content: "index, follow" },
-      { rel: "canonical", href: "https://itelenergy.com" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

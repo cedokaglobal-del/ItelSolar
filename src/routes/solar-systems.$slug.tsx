@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, BatteryCharging, Box, Check, Cpu, Lightbulb, ShoppingBag, Star, Sun, Wrench, Zap } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { formatNGN } from "@/lib/format";
@@ -8,17 +8,31 @@ import { getSystem, useSolarSystems, generateDescription } from "@/lib/solar-sys
 import { ImageCarousel } from "@/components/site/ImageCarousel";
 
 export const Route = createFileRoute("/solar-systems/$slug")({
-  loader: ({ params }) => params,
+  loader: ({ params }) => {
+    const { slug } = params;
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem("itel.admin.solarsystems");
+      if (raw) {
+        try {
+          const systems = JSON.parse(raw) as { slug: string }[];
+          if (!systems.some((s) => s.slug === slug)) { throw notFound(); }
+        } catch {
+          if (!raw.includes(`"slug":"${slug}"`)) throw notFound();
+        }
+      }
+    }
+    return { slug };
+  },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${(loaderData?.slug ?? "").replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} — Itel Energy` },
+      { title: `${loaderData.slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} — Itel Energy` },
     ],
   }),
   component: SolarSystemDetail,
 });
 
 function SolarSystemDetail() {
-  const { slug } = Route.useParams();
+  const { slug } = Route.useLoaderData();
   const [systems] = useSolarSystems();
   const system = getSystem(slug, systems);
   const { add } = useCart();
@@ -90,7 +104,7 @@ function SolarSystemDetail() {
             </h2>
             <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground">
               {desc.split("\n\n").filter(Boolean).map((p, i) => (
-                <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
+                <p key={i}>{renderBold(p)}</p>
               ))}
             </div>
           </div>
@@ -277,4 +291,20 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="font-mono text-xs font-semibold">{value}</span>
     </div>
   );
+}
+
+function renderBold(text: string) {
+  const parts = text.split(/(<strong>|<\/strong>)/g);
+  const nodes: React.ReactNode[] = [];
+  let bold = false;
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === "<strong>") { bold = true; continue; }
+    if (parts[i] === "</strong>") { bold = false; continue; }
+    if (bold) {
+      nodes.push(<strong key={i}>{parts[i]}</strong>);
+    } else {
+      nodes.push(<Fragment key={i}>{parts[i]}</Fragment>);
+    }
+  }
+  return nodes;
 }

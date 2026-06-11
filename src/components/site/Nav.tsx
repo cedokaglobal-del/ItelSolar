@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calculator, Home, Menu, ShoppingBag, X } from "lucide-react";
+import { Calculator, Menu, ShoppingBag, X } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/cart";
 import { Logo } from "./Logo";
@@ -21,9 +21,9 @@ export function Nav() {
         <Logo />
 
         <nav className="hidden items-center gap-1 md:flex">
-          {links.map((l, i) => (
+          {links.map((l) => (
             <Link
-              key={i}
+              key={l.to}
               to={l.to}
               className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               activeProps={{ className: "text-foreground" }}
@@ -67,9 +67,9 @@ export function Nav() {
       {open && (
         <div className="border-t border-hairline md:hidden">
           <nav className="container-page flex flex-col py-3">
-            {links.map((l, i) => (
+            {links.map((l) => (
               <Link
-                key={i}
+                key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-3 text-sm text-foreground/90 hover:bg-accent"

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { useCalculatorSessions, useOrders } from "@/lib/admin-data";
+import { useCalculatorSessions } from "@/lib/admin-data";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { formatNGN, formatNumber } from "@/lib/format";
 import { BarChart3, BatteryCharging, Cpu, Sun, Zap } from "lucide-react";

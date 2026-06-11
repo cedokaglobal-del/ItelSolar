@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Pagination } from "@/components/site/Pagination";
-import { CATEGORIES, PRODUCTS, type ProductCategory } from "@/lib/products";
+import { CATEGORIES, getProducts, type ProductCategory } from "@/lib/products";
+import { useProducts } from "@/lib/admin-data";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
@@ -10,8 +11,8 @@ export const Route = createFileRoute("/shop")({
       { title: "Shop — Itel Energy" },
       { name: "description", content: "Solar panels, inverters, lithium batteries, MPPT controllers, mounts and complete kits. Premium components for African conditions." },
       { property: "og:url", content: "https://itelenergy.com/shop" },
-      { rel: "canonical", href: "https://itelenergy.com/shop" },
     ],
+    links: [{ rel: "canonical", href: "https://itelenergy.com/shop" }],
   }),
   component: Shop,
 });
@@ -21,18 +22,20 @@ type Filter = ProductCategory | "all";
 const PER_PAGE = 8;
 
 function Shop() {
+  const [adminProducts] = useProducts();
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<"featured" | "low" | "high" | "rating">("featured");
   const [page, setPage] = useState(1);
 
   const products = useMemo(() => {
-    let list = filter === "all" ? PRODUCTS : PRODUCTS.filter((p) => p.category === filter);
+    const source = adminProducts.length > 0 ? adminProducts : getProducts();
+    let list = filter === "all" ? source : source.filter((p) => p.category === filter);
     list = [...list];
     if (sort === "low") list.sort((a, b) => a.price - b.price);
     if (sort === "high") list.sort((a, b) => b.price - a.price);
     if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
     return list;
-  }, [filter, sort]);
+  }, [filter, sort, adminProducts]);
 
   const totalPages = Math.ceil(products.length / PER_PAGE);
   const paged = products.slice((page - 1) * PER_PAGE, page * PER_PAGE);

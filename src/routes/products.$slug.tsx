@@ -1,13 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Check, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PanelArt } from "@/components/site/ProductArt";
 import { ProductCard } from "@/components/site/ProductCard";
 import { ImageCarousel } from "@/components/site/ImageCarousel";
 import { useCart } from "@/lib/cart";
 import { formatNGN } from "@/lib/format";
-import { getProduct, PRODUCTS } from "@/lib/products";
+import { getProduct, getProducts } from "@/lib/products";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: ({ params }) => {
@@ -16,14 +16,12 @@ export const Route = createFileRoute("/products/$slug")({
     return { product };
   },
   head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — Itel Energy` },
-          { name: "description", content: loaderData.product.tagline },
-          { property: "og:title", content: `${loaderData.product.name} — Itel Energy` },
-          { property: "og:description", content: loaderData.product.tagline },
-        ]
-      : [],
+    meta: [
+      { title: `${loaderData.product.name} — Itel Energy` },
+      { name: "description", content: loaderData.product.tagline },
+      { property: "og:title", content: `${loaderData.product.name} — Itel Energy` },
+      { property: "og:description", content: loaderData.product.tagline },
+    ],
   }),
   component: ProductPage,
 });
@@ -33,9 +31,9 @@ function ProductPage() {
   const { add } = useCart();
   const [qty, setQty] = useState(1);
 
-  const related = PRODUCTS.filter(
+  const related = useMemo(() => getProducts().filter(
     (p) => p.category === product.category && p.slug !== product.slug,
-  ).slice(0, 4);
+  ).slice(0, 4), [product.category, product.slug]);
 
   const hasImages = product.images?.length > 0 && product.images[0].startsWith("data:");
   const discountPct = product.originalPrice && product.originalPrice > product.price

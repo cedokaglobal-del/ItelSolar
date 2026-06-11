@@ -1,9 +1,12 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { isAdminAuthenticated, loginAdmin } from "@/lib/admin-auth";
 import { Logo } from "@/components/site/Logo";
 
 export const Route = createFileRoute("/admin/login")({
+  beforeLoad: () => {
+    if (typeof window !== "undefined" && isAdminAuthenticated()) throw redirect({ to: "/admin" });
+  },
   head: () => ({ meta: [{ title: "Admin Login — Itel Energy" }] }),
   component: AdminLogin,
 });
@@ -12,15 +15,15 @@ function AdminLogin() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  if (isAdminAuthenticated()) {
-    router.navigate({ to: "/admin" });
-    return null;
-  }
-
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (loginAdmin(password)) {
+    setLoading(true);
+    setError(false);
+    const ok = await loginAdmin(password);
+    setLoading(false);
+    if (ok) {
       router.navigate({ to: "/admin" });
     } else {
       setError(true);
@@ -51,9 +54,10 @@ function AdminLogin() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110"
+              disabled={loading}
+              className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60"
             >
-              Sign in
+              {loading ? "Verifying..." : "Sign in"}
             </button>
           </form>
           <p className="mt-6 text-center text-[10px] text-muted-foreground">

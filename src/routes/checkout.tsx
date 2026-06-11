@@ -66,7 +66,6 @@ function CheckoutPage() {
     clear();
     setDone(id);
     setSubmitting(false);
-    navigate({ to: "/checkout" });
   };
 
   return (

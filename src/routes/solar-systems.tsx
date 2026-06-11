@@ -12,8 +12,8 @@ export const Route = createFileRoute("/solar-systems")({
       { title: "Solar Systems — Itel Energy" },
       { name: "description", content: "Pre-engineered solar systems for homes and businesses. Complete combos with panels, inverters, batteries, and installation accessories." },
       { property: "og:url", content: "https://itelenergy.com/solar-systems" },
-      { rel: "canonical", href: "https://itelenergy.com/solar-systems" },
     ],
+    links: [{ rel: "canonical", href: "https://itelenergy.com/solar-systems" }],
   }),
   component: SolarSystemsPage,
 });

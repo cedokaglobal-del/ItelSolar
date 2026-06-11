@@ -78,8 +78,8 @@ export const Route = createFileRoute("/calculator")({
           "Size your solar system in 60 seconds. Get panel, inverter, battery and cost estimates with payback period and CO₂ savings.",
       },
       { property: "og:url", content: "https://itelenergy.com/calculator" },
-      { rel: "canonical", href: "https://itelenergy.com/calculator" },
     ],
+    links: [{ rel: "canonical", href: "https://itelenergy.com/calculator" }],
   }),
   component: CalculatorPage,
 });

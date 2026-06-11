@@ -170,4 +170,29 @@ export const PRODUCTS: Product[] = [
   },
 ];
 
-export const getProduct = (slug: string) => PRODUCTS.find((p) => p.slug === slug);
+export function getProduct(slug: string): Product | undefined {
+  try {
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem("itel.admin.products");
+      if (raw) {
+        const adminProducts = JSON.parse(raw) as Product[];
+        const found = adminProducts.find((p) => p.slug === slug);
+        if (found) return found;
+      }
+    }
+  } catch { /* ignore */ }
+  return PRODUCTS.find((p) => p.slug === slug);
+}
+
+export function getProducts(): Product[] {
+  try {
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem("itel.admin.products");
+      if (raw) {
+        const adminProducts = JSON.parse(raw) as Product[];
+        if (adminProducts.length > 0) return adminProducts;
+      }
+    }
+  } catch { /* ignore */ }
+  return PRODUCTS;
+}

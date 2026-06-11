@@ -396,8 +396,8 @@ const KEY = "itel.admin.solarsystems";
 function migrateSystem(s: SolarSystem): SolarSystem {
   return {
     ...s,
-    images: (s as any).images?.length ? (s as any).images : seedImages(s.slug),
-    whatItPowers: (s as any).whatItPowers || "",
+    images: Array.isArray(s.images) && s.images.length > 0 ? s.images : seedImages(s.slug),
+    whatItPowers: s.whatItPowers || "",
   };
 }
 
@@ -410,14 +410,12 @@ export function useSolarSystems(): [SolarSystem[], (slug: string, price: number)
         const parsed = JSON.parse(raw) as SolarSystem[];
         if (Array.isArray(parsed)) return parsed.map(migrateSystem);
       }
-    } catch { /* ignore */ }
-    const s = seedSolarSystems();
-    localStorage.setItem(KEY, JSON.stringify(s));
-    return s;
+    } catch { console.warn("SolarSystems: failed to parse saved data"); }
+    return seedSolarSystems();
   });
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(systems)); } catch { /* ignore */ }
+    try { localStorage.setItem(KEY, JSON.stringify(systems)); } catch { console.warn("SolarSystems: failed to persist"); }
   }, [systems]);
 
   const updatePrice = useCallback((slug: string, price: number) => {

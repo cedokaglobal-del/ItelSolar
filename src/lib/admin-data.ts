@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PRODUCTS, seedProductImages, type Product, type ProductCategory } from "./products";
+import { PRODUCTS, seedProductImages, type Product } from "./products";
 
 export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
 
@@ -39,9 +39,8 @@ export type CalculatorSession = {
 
 // ── Seed data ──────────────────────────────────────────
 
-const now = new Date();
-
 function seedOrders(): Order[] {
+  const now = new Date();
   return [
     { id: "ITL-A7F3B2", date: new Date(now.getTime() - 3 * 86400000).toISOString(), customer: { name: "Chidi Okonkwo", email: "chidi@example.com", phone: "+234 802 111 2233" }, items: [{ slug: "itel-starter-3kva", name: "Itel Starter Kit \u00b7 3kVA Home Bundle", price: 1850000, qty: 1, spec: "3kVA \u00b7 5kWh" }], subtotal: 1850000, shipping: 0, total: 1850000, status: "shipped", payment: "paystack", address: { line: "15 Adeola Odeku St", city: "Lagos", state: "Lagos" } },
     { id: "ITL-D9C1E4", date: new Date(now.getTime() - 5 * 86400000).toISOString(), customer: { name: "Amina Bello", email: "amina@example.com", phone: "+234 803 555 7788" }, items: [{ slug: "itel-mono-550w", name: "Itel Mono PERC 550W", price: 165000, qty: 8, spec: "550W" }, { slug: "itel-hybrid-5kva", name: "Itel Hybrid Inverter 5kVA / 48V", price: 685000, qty: 1, spec: "5kVA \u00b7 48V" }, { slug: "itel-lifepo4-5kwh", name: "Itel LiFePO4 5.12kWh Wall-Mount", price: 1450000, qty: 2, spec: "5.12kWh \u00b7 48V" }], subtotal: 4905000, shipping: 0, total: 4905000, status: "processing", payment: "flutterwave", address: { line: "42 Ahmadu Bello Way", city: "Abuja", state: "FCT" } },
@@ -55,6 +54,7 @@ function seedOrders(): Order[] {
 }
 
 function seedCalculatorSessions(): CalculatorSession[] {
+  const now = new Date();
   return [
     { id: "cs-001", date: new Date(now.getTime() - 1 * 86400000).toISOString(), applianceCount: 8, dailyKWh: 14.6, batteryType: "lithium", systemVoltage: 48, panelCount: 6, inverterKVA: 5, batteryKWh: 10.2, estimatedCost: 4250000 },
     { id: "cs-002", date: new Date(now.getTime() - 2 * 86400000).toISOString(), applianceCount: 5, dailyKWh: 8.2, batteryType: "lithium", systemVoltage: 24, panelCount: 4, inverterKVA: 3, batteryKWh: 5.8, estimatedCost: 2450000 },
@@ -77,14 +77,12 @@ function useLocalStorage<T>(key: string, seed: () => T): [T, React.Dispatch<Reac
     try {
       const raw = localStorage.getItem(key);
       if (raw) return JSON.parse(raw) as T;
-    } catch { /* ignore */ }
-    const s = seed();
-    localStorage.setItem(key, JSON.stringify(s));
-    return s;
+    } catch { console.warn(`useLocalStorage(${key}): failed to parse`); }
+    return seed();
   });
 
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(state)); } catch { /* ignore */ }
+    try { localStorage.setItem(key, JSON.stringify(state)); } catch { console.warn(`useLocalStorage(${key}): failed to persist`); }
   }, [key, state]);
 
   return [state, setState];
@@ -113,8 +111,8 @@ export function useCalculatorSessions(): CalculatorSession[] {
 function migrateProduct(p: Product): Product {
   return {
     ...p,
-    images: (p as any).images?.length ? (p as any).images : seedProductImages(p.slug, p.name, p.category, p.spec),
-    originalPrice: (p as any).originalPrice ?? undefined,
+    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : seedProductImages(p.slug, p.name, p.category, p.spec),
+    originalPrice: "originalPrice" in p ? p.originalPrice : undefined,
   };
 }
 

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { PRODUCTS, type Product } from "./products";
+import { getProduct, type Product } from "./products";
+import { useProducts } from "./admin-data";
 
 export type CartItem = { slug: string; qty: number };
 
@@ -19,13 +20,14 @@ const KEY = "itel.cart.v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [adminProducts] = useProducts();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setItems(JSON.parse(raw));
-    } catch {}
+    } catch { console.warn("Cart: failed to parse saved items"); }
   }, []);
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartCtx>(() => {
     const detailed = items
       .map((i) => {
-        const product = PRODUCTS.find((p) => p.slug === i.slug);
+        const product = getProduct(i.slug) ?? adminProducts.find((p) => p.slug === i.slug);
         if (!product) return null;
         return { product, qty: i.qty, lineTotal: product.price * i.qty };
       })
@@ -67,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const count = detailed.reduce((s, i) => s + i.qty, 0);
     const subtotal = detailed.reduce((s, i) => s + i.lineTotal, 0);
     return { items, detailed, count, subtotal, add, remove, setQty, clear };
-  }, [items, add, remove, setQty, clear]);
+  }, [items, add, remove, setQty, clear, adminProducts]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
