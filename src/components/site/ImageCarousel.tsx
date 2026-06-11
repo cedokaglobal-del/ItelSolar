@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function ImageCarousel({ images, alt, className = "" }: { images: string[]; alt: string; className?: string }) {
   const [idx, setIdx] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const touchX = useRef(0);
 
   const startTimer = useCallback(() => {

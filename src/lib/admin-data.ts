@@ -71,7 +71,7 @@ function seedCalculatorSessions(): CalculatorSession[] {
 
 // ── localStorage hooks ──────────────────────────────────
 
-function useLocalStorage<T>(key: string, seed: () => T): [T, (v: T) => void] {
+function useLocalStorage<T>(key: string, seed: () => T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
     if (typeof window === "undefined") return seed();
     try {

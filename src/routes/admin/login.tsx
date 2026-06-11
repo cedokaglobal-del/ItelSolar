@@ -4,7 +4,7 @@ import { isAdminAuthenticated, loginAdmin } from "@/lib/admin-auth";
 import { Logo } from "@/components/site/Logo";
 
 export const Route = createFileRoute("/admin/login")({
-  head: () => [{ title: "Admin Login — Itel Energy" }],
+  head: () => ({ meta: [{ title: "Admin Login — Itel Energy" }] }),
   component: AdminLogin,
 });
 

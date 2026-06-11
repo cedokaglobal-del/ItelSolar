@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/solar-systems")({
   beforeLoad: () => {
     if (typeof window !== "undefined" && !isAdminAuthenticated()) throw redirect({ to: "/admin/login" });
   },
-  head: () => [{ title: "Solar Systems — Itel Admin" }],
+  head: () => ({ meta: [{ title: "Solar Systems — Itel Admin" }] }),
   component: AdminSolarSystems,
 });
 
@@ -60,6 +60,7 @@ export function AdminSolarSystemsContent({ onPublish }: { onPublish?: (system: S
       name: form.name,
       tagline: form.tagline,
       description: form.description,
+      images: [],
       rating: existing?.rating ?? 0,
       reviews: existing?.reviews ?? 0,
       voltage: form.voltage as "24V" | "48V",

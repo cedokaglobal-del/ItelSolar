@@ -11,7 +11,7 @@ export const Route = createFileRoute("/solar-systems/$slug")({
   loader: ({ params }) => params,
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData.slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} — Itel Energy` },
+      { title: `${(loaderData?.slug ?? "").replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} — Itel Energy` },
     ],
   }),
   component: SolarSystemDetail,
