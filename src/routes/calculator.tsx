@@ -13,7 +13,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   APPLIANCE_PRESETS,
   calculate,
@@ -22,41 +22,6 @@ import {
   type CalcInput,
 } from "@/lib/calculator";
 import { formatNGN, formatNumber } from "@/lib/format";
-
-const BarChart = lazy(() =>
-  import("recharts").then((m) => ({
-    default: ({ data }: { data: { name: string; kWh: number }[] }) => {
-      const { Bar, BarChart: BC, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } = m;
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BC data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0 0 0 / 0.06)" vertical={false} />
-            <XAxis
-              dataKey="name"
-              stroke="oklch(0.55 0.015 260)"
-              fontSize={10}
-              interval={0}
-              angle={-25}
-              textAnchor="end"
-              height={50}
-            />
-            <YAxis stroke="oklch(0.55 0.015 260)" fontSize={10} />
-            <Tooltip
-              cursor={{ fill: "oklch(0 0 0 / 0.04)" }}
-              contentStyle={{
-                background: "var(--card)",
-                border: "1px solid var(--hairline)",
-                borderRadius: "0.5rem",
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="kWh" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-          </BC>
-        </ResponsiveContainer>
-      );
-    },
-  })),
-);
 
 export const Route = createFileRoute("/calculator")({
   head: () => ({
@@ -108,19 +73,6 @@ function CalculatorPage() {
 
   const removeAppliance = (id: string) => setAppliances((prev) => prev.filter((a) => a.id !== id));
 
-  const chartData = useMemo(
-    () =>
-      appliances
-        .filter((a) => a.qty > 0 && a.hours > 0)
-        .map((a) => ({
-          name: a.name.length > 14 ? a.name.slice(0, 14) + "\u2026" : a.name,
-          kWh: +((a.watts * a.qty * a.hours) / 1000).toFixed(2),
-        }))
-        .sort((a, b) => b.kWh - a.kWh)
-        .slice(0, 8),
-    [appliances],
-  );
-
   return (
     <div>
       <section className="relative overflow-hidden border-b bg-gradient-to-b from-primary/5 to-transparent">
@@ -143,9 +95,9 @@ function CalculatorPage() {
 
       <section className="container-page py-10">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-12">
-          {/* Inputs */}
+          {/* ── INPUTS ── */}
           <div className="space-y-8">
-            {/* Step 1 */}
+            {/* Step 1: Appliances */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
@@ -209,7 +161,7 @@ function CalculatorPage() {
               </div>
             </div>
 
-            {/* Step 2 */}
+            {/* Step 2: Preferences */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
@@ -266,9 +218,9 @@ function CalculatorPage() {
             </div>
           </div>
 
-          {/* Results */}
+          {/* ── RESULTS ── */}
           <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            {/* ── System Design ── */}
+            {/* System Design */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary">
@@ -280,39 +232,19 @@ function CalculatorPage() {
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Based on your {appliances.length} appliance{appliances.length !== 1 ? "s" : ""}{" "}
-                &middot; {sunHours} sun hrs &middot; {autonomyDays}-day autonomy
+                {appliances.length} appliance{appliances.length !== 1 ? "s" : ""} &middot;{" "}
+                {sunHours} sun hrs &middot; {autonomyDays}-day autonomy
               </p>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <ResultCard
-                  icon={Zap}
-                  label="Daily energy need"
-                  value={`${result.dailyEnergyKWh.toFixed(1)} kWh`}
-                  hint={`${appliances.filter((a) => a.qty > 0).length} active appliances`}
-                />
-                <ResultCard
-                  icon={Sun}
-                  label="Solar array"
-                  value={`${result.panelCountW550} \u00d7 550W`}
-                  hint={`${result.panelArrayKW.toFixed(2)} kW total`}
-                />
-                <ResultCard
-                  icon={Cpu}
-                  label="Inverter"
-                  value={`${result.inverterKVA} kVA`}
-                  hint="Pure sine wave hybrid"
-                />
-                <ResultCard
-                  icon={BatteryCharging}
-                  label="Battery bank"
-                  value={`${result.batteryCapacityKWh.toFixed(1)} kWh`}
-                  hint={battery === "lithium" ? "LiFePO4" : "Tubular"}
-                />
+                <ResultCard icon={Zap} label="Daily energy need" value={`${result.dailyEnergyKWh.toFixed(1)} kWh`} />
+                <ResultCard icon={Sun} label="Solar array" value={`${result.panelCountW550} × 550W`} />
+                <ResultCard icon={Cpu} label="Inverter" value={`${result.inverterKVA} kVA`} />
+                <ResultCard icon={BatteryCharging} label="Battery bank" value={`${result.batteryCapacityKWh.toFixed(1)} kWh`} />
               </div>
             </div>
 
-            {/* ── Cost & ROI ── */}
+            {/* Cost & Savings */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-4 w-4 text-primary" />
@@ -333,36 +265,10 @@ function CalculatorPage() {
                     Hardware + balance of system + installation
                   </p>
                 </div>
-                <ImpactBadge
-                  icon={TrendingDown}
-                  label="Payback period"
-                  value={
-                    result.paybackMonths > 0
-                      ? `${result.paybackMonths.toFixed(1)} months`
-                      : "\u2014"
-                  }
-                  hint="vs generator fuel costs"
-                />
-                <ImpactBadge
-                  icon={Leaf}
-                  label="CO\u2082 avoided / yr"
-                  value={`${formatNumber(result.co2SavedKgPerYear)} kg`}
-                  hint="~21 kg per tree"
-                />
-                <ImpactBadge
-                  icon={Zap}
-                  label="Monthly gen savings"
-                  value={formatNGN(result.monthlyGenSavingsNGN)}
-                  hint="Diesel cost avoided"
-                  className="col-span-2 sm:col-span-1"
-                />
-                <ImpactBadge
-                  icon={Sun}
-                  label="Trees equivalent"
-                  value={`${result.treesEquivalent} trees`}
-                  hint="CO\u2082 offset per year"
-                  className="col-span-2 sm:col-span-1"
-                />
+                <ImpactBadge icon={TrendingDown} label="Payback period" value={result.paybackMonths > 0 ? `${result.paybackMonths.toFixed(1)} months` : "—"} />
+                <ImpactBadge icon={Leaf} label="CO₂ avoided / yr" value={`${formatNumber(result.co2SavedKgPerYear)} kg`} />
+                <ImpactBadge icon={Zap} label="Monthly gen savings" value={formatNGN(result.monthlyGenSavingsNGN)} />
+                <ImpactBadge icon={Sun} label="Trees equivalent" value={`${result.treesEquivalent} trees`} />
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
@@ -370,8 +276,7 @@ function CalculatorPage() {
                   to="/shop"
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110"
                 >
-                  Build this system
-                  <ArrowRight className="h-4 w-4" />
+                  Build this system <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/shop"
@@ -382,7 +287,7 @@ function CalculatorPage() {
               </div>
             </div>
 
-            {/* ── Spec breakdown ── */}
+            {/* Specification breakdown */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Specification breakdown
@@ -409,38 +314,71 @@ function CalculatorPage() {
               </dl>
             </div>
 
-            {/* ── Chart ── */}
-            {chartData.length > 0 && (
-              <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Energy by appliance &middot; kWh / day
-                  </p>
-                </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Top appliances by daily consumption. Total: {result.dailyEnergyKWh.toFixed(1)}{" "}
-                  kWh/day
-                </p>
-                <div className="mt-4 h-56">
-                  <Suspense
-                    fallback={
-                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                        Loading chart...
-                      </div>
-                    }
-                  >
-                    <BarChart data={chartData} />
-                  </Suspense>
-                </div>
-              </div>
-            )}
+            {/* Pure CSS bar chart — zero dependencies */}
+            <EnergyChart
+              appliances={appliances}
+              dailyTotal={result.dailyEnergyKWh}
+            />
           </div>
         </div>
       </section>
     </div>
   );
 }
+
+/* ── Pure CSS bar chart ── */
+function EnergyChart({ appliances, dailyTotal }: { appliances: Appliance[]; dailyTotal: number }) {
+  const bars = useMemo(() => {
+    const raw = appliances
+      .filter((a) => a.qty > 0 && a.hours > 0)
+      .map((a) => ({
+        name: a.name.length > 16 ? a.name.slice(0, 16) + "…" : a.name,
+        kWh: +((a.watts * a.qty * a.hours) / 1000).toFixed(2),
+      }))
+      .sort((a, b) => b.kWh - a.kWh)
+      .slice(0, 8);
+    const maxKWh = Math.max(...raw.map((b) => b.kWh), 0.1);
+    return raw.map((b) => ({ ...b, pct: Math.max((b.kWh / maxKWh) * 100, 2) }));
+  }, [appliances]);
+
+  if (bars.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+      <div className="flex items-center gap-2">
+        <Zap className="h-4 w-4 text-primary" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Energy by appliance &middot; kWh / day
+        </p>
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Total: {dailyTotal.toFixed(1)} kWh/day
+      </p>
+      <div className="mt-4 space-y-2.5">
+        {bars.map((b) => (
+          <div key={b.name} className="flex items-center gap-3">
+            <span className="w-28 shrink-0 truncate text-right text-[11px] text-foreground/80">
+              {b.name}
+            </span>
+            <div className="flex-1">
+              <div className="h-5 w-full overflow-hidden rounded-full bg-accent">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${b.pct}%` }}
+                />
+              </div>
+            </div>
+            <span className="w-14 shrink-0 text-right font-mono text-[11px] font-semibold text-foreground tabular-nums">
+              {b.kWh.toFixed(1)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Sub-components ── */
 
 function ApplianceRow({
   appliance,
@@ -473,34 +411,15 @@ function ApplianceRow({
         <div className="flex gap-2">
           <div className="flex-1">
             <p className="mb-0.5 text-[10px] font-medium text-muted-foreground">Watts</p>
-            <NumberInput
-              value={appliance.watts}
-              onChange={(v) => onChange({ watts: v })}
-              suffix="W"
-              min={1}
-              max={5000}
-            />
+            <NumberInput value={appliance.watts} onChange={(v) => onChange({ watts: v })} suffix="W" min={1} max={5000} />
           </div>
           <div className="flex-1">
             <p className="mb-0.5 text-[10px] font-medium text-muted-foreground">Qty</p>
-            <NumberInput
-              value={appliance.qty}
-              onChange={(v) => onChange({ qty: v })}
-              suffix="×"
-              min={0}
-              max={50}
-            />
+            <NumberInput value={appliance.qty} onChange={(v) => onChange({ qty: v })} suffix="×" min={0} max={50} />
           </div>
           <div className="flex-1">
             <p className="mb-0.5 text-[10px] font-medium text-muted-foreground">Hrs</p>
-            <NumberInput
-              value={appliance.hours}
-              onChange={(v) => onChange({ hours: v })}
-              suffix="h"
-              min={0}
-              max={24}
-              step={0.5}
-            />
+            <NumberInput value={appliance.hours} onChange={(v) => onChange({ hours: v })} suffix="h" min={0} max={24} step={0.5} />
           </div>
         </div>
       </div>
@@ -511,28 +430,9 @@ function ApplianceRow({
           onChange={(e) => onChange({ name: e.target.value })}
           className="rounded-md bg-transparent px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
         />
-        <NumberInput
-          value={appliance.watts}
-          onChange={(v) => onChange({ watts: v })}
-          suffix="W"
-          min={1}
-          max={5000}
-        />
-        <NumberInput
-          value={appliance.qty}
-          onChange={(v) => onChange({ qty: v })}
-          suffix="×"
-          min={0}
-          max={50}
-        />
-        <NumberInput
-          value={appliance.hours}
-          onChange={(v) => onChange({ hours: v })}
-          suffix="h"
-          min={0}
-          max={24}
-          step={0.5}
-        />
+        <NumberInput value={appliance.watts} onChange={(v) => onChange({ watts: v })} suffix="W" min={1} max={5000} />
+        <NumberInput value={appliance.qty} onChange={(v) => onChange({ qty: v })} suffix="×" min={0} max={50} />
+        <NumberInput value={appliance.hours} onChange={(v) => onChange({ hours: v })} suffix="h" min={0} max={24} step={0.5} />
         <button
           type="button"
           onClick={onRemove}
@@ -547,19 +447,9 @@ function ApplianceRow({
 }
 
 function NumberInput({
-  value,
-  onChange,
-  suffix,
-  min = 0,
-  max = 9999,
-  step = 1,
+  value, onChange, suffix, min = 0, max = 9999, step = 1,
 }: {
-  value: number;
-  onChange: (v: number) => void;
-  suffix?: string;
-  min?: number;
-  max?: number;
-  step?: number;
+  value: number; onChange: (v: number) => void; suffix?: string; min?: number; max?: number; step?: number;
 }) {
   return (
     <div className="relative">
@@ -582,32 +472,16 @@ function NumberInput({
 }
 
 function RangeField({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-  suffix,
-  hint,
+  label, value, onChange, min, max, step, suffix, hint,
 }: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-  step: number;
-  suffix: string;
-  hint?: string;
+  label: string; value: number; onChange: (v: number) => void; min: number; max: number; step: number; suffix: string; hint?: string;
 }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div>
       <div className="flex items-baseline justify-between">
         <label className="text-sm font-medium">{label}</label>
-        <span className="font-mono text-xs font-semibold text-primary">
-          {value} {suffix}
-        </span>
+        <span className="font-mono text-xs font-semibold text-primary">{value} {suffix}</span>
       </div>
       <div className="relative mt-2">
         <input
@@ -629,15 +503,9 @@ function RangeField({
 }
 
 function Segmented({
-  label,
-  value,
-  onChange,
-  options,
+  label, value, onChange, options,
 }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
 }) {
   return (
     <div>
@@ -666,15 +534,9 @@ function Segmented({
 }
 
 function ResultCard({
-  icon: Icon,
-  label,
-  value,
-  hint,
+  icon: Icon, label, value,
 }: {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  label: string;
-  value: string;
-  hint?: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; value: string;
 }) {
   return (
     <div className="rounded-xl border bg-surface p-4">
@@ -683,35 +545,21 @@ function ResultCard({
         {label}
       </div>
       <p className="mt-1.5 font-mono text-base font-semibold">{value}</p>
-      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground/70">{hint}</p>}
     </div>
   );
 }
 
 function ImpactBadge({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  className = "",
+  icon: Icon, label, value,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  hint?: string;
-  className?: string;
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string;
 }) {
   return (
-    <div
-      className={`flex items-center gap-2.5 rounded-lg border bg-background px-3 py-2.5 ${className}`}
-    >
+    <div className="flex items-center gap-2.5 rounded-lg border bg-background px-3 py-2.5">
       <Icon className="h-4 w-4 shrink-0 text-primary" />
       <div className="min-w-0">
-        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          {label}
-        </p>
+        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
         <p className="truncate font-mono text-xs font-semibold">{value}</p>
-        {hint && <p className="truncate text-[9px] text-muted-foreground/70">{hint}</p>}
       </div>
     </div>
   );

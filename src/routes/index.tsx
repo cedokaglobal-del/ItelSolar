@@ -132,15 +132,15 @@ function Home() {
               <Link
                 key={c.id}
                 to="/shop"
-                className="card-cmp group relative w-[95px] shrink-0 snap-start overflow-hidden rounded-xl transition-all active:scale-[0.97]"
+                className="card-cmp group relative w-[80px] shrink-0 snap-start overflow-hidden rounded-xl transition-all active:scale-[0.97]"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${meta.gradient} opacity-90`} />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
-                <div className="relative flex flex-col items-center gap-1 px-1.5 py-2.5">
-                  <div className="grid h-6 w-6 place-items-center rounded-lg bg-white/20 text-white">
-                    <Icon className="h-3 w-3" />
+                <div className="relative flex flex-col items-center gap-0.5 px-1 py-2">
+                  <div className="grid h-5 w-5 place-items-center rounded-lg bg-white/20 text-white">
+                    <Icon className="h-2.5 w-2.5" />
                   </div>
-                  <span className="text-[9px] font-semibold text-white text-center leading-tight">
+                  <span className="text-[8px] font-semibold text-white text-center leading-tight">
                     {c.label}
                   </span>
                 </div>
