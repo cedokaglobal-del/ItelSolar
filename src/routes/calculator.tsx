@@ -13,13 +13,12 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Component, useMemo, useState } from "react";
 import {
   APPLIANCE_PRESETS,
   calculate,
   uid,
   type Appliance,
-  type CalcInput,
 } from "@/lib/calculator";
 import { formatNGN, formatNumber } from "@/lib/format";
 
@@ -36,8 +35,49 @@ export const Route = createFileRoute("/calculator")({
     ],
     links: [{ rel: "canonical", href: "https://itelenergy.com/calculator" }],
   }),
-  component: CalculatorPage,
+  component: CalculatorPageWrapper,
 });
+
+class ErrorFallback extends Component<{ children: React.ReactNode }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    console.error("Calculator error boundary caught:", error);
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="container-page py-20 text-center">
+          <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary">
+            Error
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+            Something tripped a breaker
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {this.state.error.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+          >
+            Reload page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function CalculatorPageWrapper() {
+  return (
+    <ErrorFallback>
+      <CalculatorPage />
+    </ErrorFallback>
+  );
+}
 
 const STARTER: Appliance[] = [
   { id: "1", name: "LED bulb", watts: 10, qty: 8, hours: 6 },
@@ -52,15 +92,19 @@ function CalculatorPage() {
   const [appliances, setAppliances] = useState<Appliance[]>(STARTER);
   const [sunHours, setSunHours] = useState(5);
   const [autonomyDays, setAutonomyDays] = useState(1);
-  const [battery, setBattery] = useState<CalcInput["battery"]>("lithium");
-  const [systemVoltage, setSystemVoltage] = useState<CalcInput["systemVoltage"]>(48);
+  const [battery, setBattery] = useState<"lithium" | "tubular">("lithium");
+  const [systemVoltage, setSystemVoltage] = useState<24 | 48>(48);
 
-  const result = useMemo(
-    () => calculate({ appliances, sunHours, autonomyDays, battery, systemVoltage }),
-    [appliances, sunHours, autonomyDays, battery, systemVoltage],
-  );
+  const result = useMemo(() => {
+    try {
+      return calculate({ appliances, sunHours, autonomyDays, battery, systemVoltage });
+    } catch (e) {
+      console.error("calculate() failed:", e);
+      return null;
+    }
+  }, [appliances, sunHours, autonomyDays, battery, systemVoltage]);
 
-  const addAppliance = (preset?: (typeof APPLIANCE_PRESETS)[number]) => {
+  const addAppliance = (preset?: { name: string; watts: number }) => {
     const p = preset ?? APPLIANCE_PRESETS[0];
     setAppliances((prev) => [
       ...prev,
@@ -95,9 +139,7 @@ function CalculatorPage() {
 
       <section className="container-page py-10">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-12">
-          {/* ── INPUTS ── */}
           <div className="space-y-8">
-            {/* Step 1: Appliances */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
@@ -161,7 +203,6 @@ function CalculatorPage() {
               </div>
             </div>
 
-            {/* Step 2: Preferences */}
             <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
@@ -199,7 +240,7 @@ function CalculatorPage() {
                 <Segmented
                   label="Battery type"
                   value={battery}
-                  onChange={(v) => setBattery(v as CalcInput["battery"])}
+                  onChange={(v) => setBattery(v as "lithium" | "tubular")}
                   options={[
                     { value: "lithium", label: "LiFePO4" },
                     { value: "tubular", label: "Tubular" },
@@ -208,7 +249,7 @@ function CalculatorPage() {
                 <Segmented
                   label="System voltage"
                   value={String(systemVoltage)}
-                  onChange={(v) => setSystemVoltage(Number(v) as CalcInput["systemVoltage"])}
+                  onChange={(v) => setSystemVoltage(Number(v) as 24 | 48)}
                   options={[
                     { value: "24", label: "24 V" },
                     { value: "48", label: "48 V" },
@@ -218,167 +259,168 @@ function CalculatorPage() {
             </div>
           </div>
 
-          {/* ── RESULTS ── */}
-          <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            {/* System Design */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  <Calculator className="-mt-0.5 mr-1 inline h-3.5 w-3.5" />
-                  Recommended system
-                </p>
-                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
-                  Live
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                {appliances.length} appliance{appliances.length !== 1 ? "s" : ""} &middot;{" "}
-                {sunHours} sun hrs &middot; {autonomyDays}-day autonomy
-              </p>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <ResultCard icon={Zap} label="Daily energy need" value={`${result.dailyEnergyKWh.toFixed(1)} kWh`} />
-                <ResultCard icon={Sun} label="Solar array" value={`${result.panelCountW550} × 550W`} />
-                <ResultCard icon={Cpu} label="Inverter" value={`${result.inverterKVA} kVA`} />
-                <ResultCard icon={BatteryCharging} label="Battery bank" value={`${result.batteryCapacityKWh.toFixed(1)} kWh`} />
-              </div>
-            </div>
-
-            {/* Cost & Savings */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-4 w-4 text-primary" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Cost &amp; savings
-                </p>
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="col-span-2 rounded-xl border bg-surface p-5">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Estimated total cost
+          {result && (
+            <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+              <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    <Calculator className="-mt-0.5 mr-1 inline h-3.5 w-3.5" />
+                    Recommended system
                   </p>
-                  <p className="mt-1 text-3xl font-bold tracking-tight text-primary">
-                    {formatNGN(result.estimatedCostNGN)}
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Hardware + balance of system + installation
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {appliances.length} appliance{appliances.length !== 1 ? "s" : ""} &middot;{" "}
+                  {sunHours} sun hrs &middot; {autonomyDays}-day autonomy
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  <ResultCard icon={Zap} label="Daily energy need" value={`${result.dailyEnergyKWh.toFixed(1)} kWh`} />
+                  <ResultCard icon={Sun} label="Solar array" value={`${result.panelCountW550} × 550W`} />
+                  <ResultCard icon={Cpu} label="Inverter" value={`${result.inverterKVA} kVA`} />
+                  <ResultCard icon={BatteryCharging} label="Battery bank" value={`${result.batteryCapacityKWh.toFixed(1)} kWh`} />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-primary" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Cost &amp; savings
                   </p>
                 </div>
-                <ImpactBadge icon={TrendingDown} label="Payback period" value={result.paybackMonths > 0 ? `${result.paybackMonths.toFixed(1)} months` : "—"} />
-                <ImpactBadge icon={Leaf} label="CO₂ avoided / yr" value={`${formatNumber(result.co2SavedKgPerYear)} kg`} />
-                <ImpactBadge icon={Zap} label="Monthly gen savings" value={formatNGN(result.monthlyGenSavingsNGN)} />
-                <ImpactBadge icon={Sun} label="Trees equivalent" value={`${result.treesEquivalent} trees`} />
-              </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link
-                  to="/shop"
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110"
-                >
-                  Build this system <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  to="/shop"
-                  className="inline-flex items-center justify-center rounded-full border bg-card px-6 py-3 text-sm font-medium transition-colors hover:bg-surface"
-                >
-                  Shop kits
-                </Link>
-              </div>
-            </div>
-
-            {/* Specification breakdown */}
-            <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Specification breakdown
-              </p>
-              <dl className="mt-4 divide-y">
-                {result.breakdown.map((row) => (
-                  <div key={row.label} className="flex items-center justify-between py-3 text-sm">
-                    <dt className="text-muted-foreground">{row.label}</dt>
-                    <dd
-                      className="font-mono text-xs font-semibold"
-                      style={{
-                        color:
-                          row.tone === "solar"
-                            ? "var(--solar)"
-                            : row.tone === "tech"
-                              ? "var(--tech)"
-                              : "var(--foreground)",
-                      }}
-                    >
-                      {row.value}
-                    </dd>
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  <div className="col-span-2 rounded-xl border bg-surface p-5">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Estimated total cost
+                    </p>
+                    <p className="mt-1 text-3xl font-bold tracking-tight text-primary">
+                      {formatNGN(result.estimatedCostNGN)}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Hardware + balance of system + installation
+                    </p>
                   </div>
-                ))}
-              </dl>
-            </div>
+                  <ImpactBadge icon={TrendingDown} label="Payback period" value={result.paybackMonths > 0 ? `${result.paybackMonths.toFixed(1)} months` : "—"} />
+                  <ImpactBadge icon={Leaf} label="CO₂ avoided / yr" value={`${formatNumber(result.co2SavedKgPerYear)} kg`} />
+                  <ImpactBadge icon={Zap} label="Monthly gen savings" value={formatNGN(result.monthlyGenSavingsNGN)} />
+                  <ImpactBadge icon={Sun} label="Trees equivalent" value={`${result.treesEquivalent} trees`} />
+                </div>
 
-            {/* Pure CSS bar chart — zero dependencies */}
-            <EnergyChart
-              appliances={appliances}
-              dailyTotal={result.dailyEnergyKWh}
-            />
-          </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link
+                    to="/shop"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110"
+                  >
+                    Build this system <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/shop"
+                    className="inline-flex items-center justify-center rounded-full border bg-card px-6 py-3 text-sm font-medium transition-colors hover:bg-surface"
+                  >
+                    Shop kits
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Specification breakdown
+                </p>
+                <dl className="mt-4 divide-y">
+                  {result.breakdown.map((row) => (
+                    <div key={row.label} className="flex items-center justify-between py-3 text-sm">
+                      <dt className="text-muted-foreground">{row.label}</dt>
+                      <dd
+                        className="font-mono text-xs font-semibold"
+                        style={{
+                          color:
+                            row.tone === "solar"
+                              ? "var(--solar)"
+                              : row.tone === "tech"
+                                ? "var(--tech)"
+                                : "var(--foreground)",
+                        }}
+                      >
+                        {row.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <EnergyChart
+                appliances={appliances}
+                dailyTotal={result.dailyEnergyKWh}
+              />
+            </div>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
-/* ── Pure CSS bar chart ── */
 function EnergyChart({ appliances, dailyTotal }: { appliances: Appliance[]; dailyTotal: number }) {
-  const bars = useMemo(() => {
+  try {
     const raw = appliances
       .filter((a) => a.qty > 0 && a.hours > 0)
       .map((a) => ({
-        name: a.name.length > 16 ? a.name.slice(0, 16) + "…" : a.name,
-        kWh: +((a.watts * a.qty * a.hours) / 1000).toFixed(2),
+        name: a.name.length > 16 ? a.name.slice(0, 16) + "..." : a.name,
+        kWh: Math.round(((a.watts * a.qty * a.hours) / 1000) * 100) / 100,
       }))
       .sort((a, b) => b.kWh - a.kWh)
       .slice(0, 8);
     const maxKWh = Math.max(...raw.map((b) => b.kWh), 0.1);
-    return raw.map((b) => ({ ...b, pct: Math.max((b.kWh / maxKWh) * 100, 2) }));
-  }, [appliances]);
+    const bars = raw.map((b) => ({ ...b, pct: Math.max((b.kWh / maxKWh) * 100, 2) }));
 
-  if (bars.length === 0) return null;
+    if (bars.length === 0) return null;
 
-  return (
-    <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-      <div className="flex items-center gap-2">
-        <Zap className="h-4 w-4 text-primary" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Energy by appliance &middot; kWh / day
+    return (
+      <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-primary" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Energy by appliance / kWh per day
+          </p>
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Total: {dailyTotal.toFixed(1)} kWh/day
         </p>
-      </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        Total: {dailyTotal.toFixed(1)} kWh/day
-      </p>
-      <div className="mt-4 space-y-2.5">
-        {bars.map((b) => (
-          <div key={b.name} className="flex items-center gap-3">
-            <span className="w-28 shrink-0 truncate text-right text-[11px] text-foreground/80">
-              {b.name}
-            </span>
-            <div className="flex-1">
-              <div className="h-5 w-full overflow-hidden rounded-full bg-accent">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${b.pct}%` }}
-                />
+        <div className="mt-4 space-y-2.5">
+          {bars.map((b) => (
+            <div key={b.name} className="flex items-center gap-3">
+              <span className="w-28 shrink-0 truncate text-right text-[11px] text-foreground/80">
+                {b.name}
+              </span>
+              <div className="flex-1">
+                <div className="h-5 w-full overflow-hidden rounded-full bg-accent">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: b.pct + "%" }}
+                  />
+                </div>
               </div>
+              <span className="w-14 shrink-0 text-right font-mono text-[11px] font-semibold text-foreground tabular-nums">
+                {b.kWh.toFixed(1)}
+              </span>
             </div>
-            <span className="w-14 shrink-0 text-right font-mono text-[11px] font-semibold text-foreground tabular-nums">
-              {b.kWh.toFixed(1)}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  } catch (e) {
+    console.error("EnergyChart render error:", e);
+    return (
+      <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8 text-sm text-muted-foreground">
+        Energy chart unavailable
+      </div>
+    );
+  }
 }
-
-/* ── Sub-components ── */
 
 function ApplianceRow({
   appliance,
@@ -402,7 +444,7 @@ function ApplianceRow({
           <button
             type="button"
             onClick={onRemove}
-            aria-label={`Remove ${appliance.name}`}
+            aria-label={"Remove " + appliance.name}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -415,7 +457,7 @@ function ApplianceRow({
           </div>
           <div className="flex-1">
             <p className="mb-0.5 text-[10px] font-medium text-muted-foreground">Qty</p>
-            <NumberInput value={appliance.qty} onChange={(v) => onChange({ qty: v })} suffix="×" min={0} max={50} />
+            <NumberInput value={appliance.qty} onChange={(v) => onChange({ qty: v })} suffix="x" min={0} max={50} />
           </div>
           <div className="flex-1">
             <p className="mb-0.5 text-[10px] font-medium text-muted-foreground">Hrs</p>
@@ -431,12 +473,12 @@ function ApplianceRow({
           className="rounded-md bg-transparent px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <NumberInput value={appliance.watts} onChange={(v) => onChange({ watts: v })} suffix="W" min={1} max={5000} />
-        <NumberInput value={appliance.qty} onChange={(v) => onChange({ qty: v })} suffix="×" min={0} max={50} />
+        <NumberInput value={appliance.qty} onChange={(v) => onChange({ qty: v })} suffix="x" min={0} max={50} />
         <NumberInput value={appliance.hours} onChange={(v) => onChange({ hours: v })} suffix="h" min={0} max={24} step={0.5} />
         <button
           type="button"
           onClick={onRemove}
-          aria-label={`Remove ${appliance.name}`}
+          aria-label={"Remove " + appliance.name}
           className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -455,11 +497,24 @@ function NumberInput({
     <div className="relative">
       <input
         type="number"
-        value={value}
+        defaultValue={value}
         min={min}
         max={max}
         step={step}
-        onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || 0)))}
+        onBlur={(e) => {
+          const v = parseFloat(e.target.value);
+          if (!isNaN(v)) {
+            onChange(Math.max(min, Math.min(max, v)));
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const v = parseFloat(e.currentTarget.value);
+            if (!isNaN(v)) {
+              onChange(Math.max(min, Math.min(max, v)));
+            }
+          }
+        }}
         className="w-full rounded-md bg-background/60 px-2 py-1.5 pr-6 text-right font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
       />
       {suffix && (
@@ -486,15 +541,12 @@ function RangeField({
       <div className="relative mt-2">
         <input
           type="range"
-          value={value}
+          defaultValue={value}
           min={min}
           max={max}
           step={step}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
           className="range-slider w-full"
-          style={{
-            background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${pct}%, oklch(0 0 0 / 0.08) ${pct}%, oklch(0 0 0 / 0.08) 100%)`,
-          }}
         />
       </div>
       {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
@@ -518,11 +570,7 @@ function Segmented({
               key={opt.value}
               type="button"
               onClick={() => onChange(opt.value)}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-                active
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={"flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all " + (active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
             >
               {opt.label}
             </button>
@@ -536,7 +584,7 @@ function Segmented({
 function ResultCard({
   icon: Icon, label, value,
 }: {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string; value: string;
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string;
 }) {
   return (
     <div className="rounded-xl border bg-surface p-4">
