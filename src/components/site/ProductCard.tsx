@@ -29,47 +29,49 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
           <PanelArt category={product.category} spec={product.spec} />
         )}
         {discountPct > 0 && (
-          <span className="absolute left-3 top-3 z-10 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
+          <span className="absolute left-1.5 top-1.5 z-10 rounded-full bg-red-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm md:left-3 md:top-3 md:px-2.5 md:py-1 md:text-[10px]">
             -{discountPct}%
           </span>
         )}
         {product.badge && !discountPct && (
-          <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-sm">
+          <span className="absolute left-1.5 top-1.5 z-10 rounded-full bg-primary px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-primary-foreground shadow-sm md:left-3 md:top-3 md:px-3 md:py-1 md:text-[10px]">
             {product.badge}
           </span>
         )}
-        <span className="absolute right-3 top-3 z-10 rounded-md border border-hairline bg-background/70 px-2.5 py-1 text-[10px] font-semibold text-foreground backdrop-blur-sm">
+        <span className="absolute right-1.5 top-1.5 z-10 rounded-md border border-hairline bg-background/70 px-1.5 py-0.5 text-[8px] font-semibold text-foreground backdrop-blur-sm md:right-3 md:top-3 md:px-2.5 md:py-1 md:text-[10px]">
           {product.spec}
         </span>
         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/10 to-transparent" />
       </div>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+      <div className="flex flex-1 flex-col gap-1 p-2 md:gap-1.5 md:p-5">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground md:text-[10px]">
           {product.brand}
         </p>
-        <h3 className="text-base font-semibold leading-snug text-foreground">{product.name}</h3>
-        <p className="line-clamp-1 text-sm text-muted-foreground">{product.tagline}</p>
+        <h3 className="text-[11px] font-semibold leading-tight text-foreground md:text-base">
+          {product.name}
+        </h3>
+        <p className="hidden text-sm text-muted-foreground md:line-clamp-1">{product.tagline}</p>
 
-        <div className="mt-auto flex items-center gap-1 pt-2">
-          <Star className="h-3 w-3 fill-[var(--solar)] text-[var(--solar)]" />
-          <span className="text-xs font-medium text-foreground">{product.rating}</span>
-          <span className="text-xs text-muted-foreground">· {product.reviews}</span>
+        <div className="mt-auto flex items-center gap-1 pt-1 md:pt-2">
+          <Star className="h-2.5 w-2.5 fill-[var(--solar)] text-[var(--solar)] md:h-3 md:w-3" />
+          <span className="text-[10px] font-medium text-foreground md:text-xs">{product.rating}</span>
+          <span className="hidden text-xs text-muted-foreground md:inline">· {product.reviews}</span>
         </div>
 
-        <div className="flex items-end justify-between gap-2 pt-3">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-lg font-semibold tracking-tight">{formatNGN(product.price)}</p>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <p className="text-xs text-muted-foreground line-through">
-                  {formatNGN(product.originalPrice)}
-                </p>
-              )}
-            </div>
+        <div className="flex items-end justify-between gap-1 pt-1 md:gap-2 md:pt-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold tracking-tight md:text-lg md:font-semibold">
+              {formatNGN(product.price)}
+            </p>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <p className="text-[9px] text-muted-foreground line-through md:text-xs">
+                {formatNGN(product.originalPrice)}
+              </p>
+            )}
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-hairline px-4 py-2 text-xs font-medium transition-all group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground active:scale-95">
-            <ShoppingBag className="h-3 w-3" /> Buy
+          <span className="inline-flex items-center gap-1 rounded-full border border-hairline px-2 py-1 text-[9px] font-medium transition-all md:px-4 md:py-2 md:text-xs group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground active:scale-95">
+            <ShoppingBag className="h-2 w-2 md:h-3 md:w-3" /> Buy
           </span>
         </div>
       </div>
